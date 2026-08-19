@@ -10,7 +10,6 @@ from sound_manager import SoundManager, resource_path
 from languages import STRINGS
 
 # --- FONT LOADING (WINDOWS & LINUX ONLY) ---
-# Prevents NSApplication crash by avoiding Pyglet initialization on macOS
 if sys.platform != "darwin":
     try:
         import pyglet
@@ -18,6 +17,9 @@ if sys.platform != "darwin":
         pyglet.font.add_file(resource_path('NotoSansDevanagari-Regular.ttf'))
     except Exception as e:
         print(f"Custom fonts not loaded, using system defaults: {e}")
+
+# Initialize audio ONCE, before the loop to prevent macOS SDL crash!
+sound_manager = SoundManager()
 
 # --- SCREEN SETUP & AUTO-SCALING ---
 screen = Screen()
@@ -33,10 +35,10 @@ def show_message(text, active_lang, duration=2.0):
     if current_message != text:
         messenger.clear()
         
-        # Use appropriate font fallback based on language
+        # Use appropriate font fallback based on language (Marathi shares Hindi font)
         font_name = "Courier"
         if active_lang == "ja": font_name = "Noto Sans JP"
-        elif active_lang == "hi": font_name = "Noto Sans Devanagari"
+        elif active_lang in ["hi", "mr"]: font_name = "Noto Sans Devanagari"
             
         messenger.write(text, align="center", font=(font_name, 64, "bold"))
         current_message = text
@@ -96,7 +98,7 @@ while True:
 
     human_config, human_order, LANG = run_setup_menu(screen)
 
-    sound_manager = SoundManager()
+    # Start the music here using the pre-initialized sound_manager
     sound_manager.start_bgm()
 
     l_paddle = Paddle((-1000, 0), (24, 4), x_bounds=(-1880, 0), y_bounds=(-1040, 1040))

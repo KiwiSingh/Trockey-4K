@@ -1,6 +1,6 @@
 import time
 from turtle import Turtle
-from languages import STRINGS #type: ignore
+from languages import STRINGS
 
 def run_setup_menu(screen):
     screen.clear()
@@ -29,7 +29,6 @@ def run_setup_menu(screen):
         drawer.goto(0, 250)
         drawer.color("cyan")
         
-        # Default to English title if language isn't picked yet
         title_text = STRINGS[menu_state["lang"]]["setup_title"] if menu_state["step"] != "LANGUAGE" else "TROCKEY 4K SETUP"
         drawer.write(title_text, align="center", font=("Courier", 48, "bold"))
         drawer.color("white")
@@ -121,7 +120,11 @@ def run_setup_menu(screen):
         screen.update()
         time.sleep(0.05)
         
-    time.sleep(4.0) 
+    # --- NON-BLOCKING UI PUMP (Fixes macOS Watchdog Crash) ---
+    for _ in range(40):
+        time.sleep(0.1)
+        screen.update()
+        
     for k in ["0", "1", "2", "3", "4", "5", "6", "7"]: screen.onkeypress(None, k)
     drawer.clear()
     screen.update()
