@@ -108,7 +108,6 @@ while True:
     t_controller = Controller(joystick_id=2)
 
     # --- Ephemeral Text Setup ---
-    global messenger
     messenger = Turtle()
     messenger.hideturtle()
     messenger.penup()
