@@ -73,3 +73,16 @@ class Paddle(Turtle):
     def go_left(self):
         if self.is_active:
             self.move_x(-72)
+            
+    def ai_track_unhinged(self, puck):
+        # Move X
+        if self.xcor() < puck.xcor() - 10:
+            self.go_right()
+        elif self.xcor() > puck.xcor() + 10:
+            self.go_left()
+            
+        # Move Y
+        if self.ycor() < puck.ycor() - 10:
+            self.go_up()
+        elif self.ycor() > puck.ycor() + 10:
+            self.go_down()
