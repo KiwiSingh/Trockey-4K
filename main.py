@@ -1,27 +1,42 @@
 import time
+import pyglet #type: ignore
 from turtle import Screen, Turtle
 from controller import Controller
 from paddle import Paddle
 from puck import Puck
 from player_selector import run_setup_menu
 from scoreboard import Scoreboard
-from sound_manager import SoundManager
+from sound_manager import SoundManager, resource_path
+from languages import STRINGS #type: ignore
+
+# --- FONT LOADING ---
+try:
+    pyglet.font.add_file(resource_path('NotoSansJP-Regular.ttf'))
+    pyglet.font.add_file(resource_path('NotoSansDevanagari-Regular.ttf'))
+except Exception as e:
+    print(f"Custom fonts not loaded, using system defaults: {e}")
 
 # --- SCREEN SETUP & AUTO-SCALING ---
 screen = Screen()
 screen.setup(width=1.0, height=1.0)
 screen.setworldcoordinates(-1920, -1080, 1920, 1080)
 
-# --- GLOBAL HELPER FUNCTIONS & VARIABLES ---
 current_message = ""
 message_clear_time = 0
 messenger = None
 
-def show_message(text, duration=2.0):
+# We pass the active language to this function now
+def show_message(text, active_lang, duration=2.0):
     global current_message, message_clear_time, messenger
     if current_message != text:
         messenger.clear()
-        messenger.write(text, align="center", font=("Courier", 64, "bold"))
+        
+        # Use appropriate font fallback based on language
+        font_name = "Courier"
+        if active_lang == "ja": font_name = "Noto Sans JP"
+        elif active_lang == "hi": font_name = "Noto Sans Devanagari"
+            
+        messenger.write(text, align="center", font=(font_name, 64, "bold"))
         current_message = text
     message_clear_time = time.time() + duration
 
@@ -62,13 +77,11 @@ def handle_puck_collision(puck, paddle, pad_w, pad_h, player_name, snd_mgr):
                 
         puck.move_speed *= 0.9
         puck.move_speed = max(0.005, puck.move_speed)
-
         return True
     return False
 
-
 # ==========================================
-# MAIN ARCADE LOOP (Restarts after every win)
+# MAIN ARCADE LOOP
 # ==========================================
 while True:
     screen.clear()
@@ -76,11 +89,10 @@ while True:
     screen.title("Trockey 4K (Auto-Scaled)")
     screen.tracer(0)
 
-    # Reset message states for the new game
     current_message = ""
     message_clear_time = 0
 
-    human_config, human_order = run_setup_menu(screen)
+    human_config, human_order, LANG = run_setup_menu(screen)
 
     sound_manager = SoundManager()
     sound_manager.start_bgm()
@@ -94,7 +106,6 @@ while True:
     r_paddle.is_ai = not human_config["right"]
     t_paddle.is_ai = not human_config["top"]
 
-    # Initialize controllers dynamically with a crash-proof safety net
     active_controllers = {}
     for index, position in enumerate(human_order):
         try:
@@ -102,8 +113,6 @@ while True:
         except Exception:
             pass
 
-    # --- Ephemeral Text Setup ---
-    # We redefine messenger here because screen.clear() wiped the old one out
     messenger = Turtle()
     messenger.hideturtle()
     messenger.penup()
@@ -112,69 +121,47 @@ while True:
 
     screen.listen()
 
-    # Map the Left paddle to WASD
     screen.onkeypress(l_paddle.go_up, "w")
     screen.onkeypress(l_paddle.go_down, "s")
     screen.onkeypress(l_paddle.go_left, "a")
     screen.onkeypress(l_paddle.go_right, "d")
 
-    # Map the Right paddle to Arrow Keys
     screen.onkeypress(r_paddle.go_up, "Up")
     screen.onkeypress(r_paddle.go_down, "Down")
     screen.onkeypress(r_paddle.go_left, "Left")
     screen.onkeypress(r_paddle.go_right, "Right")
 
-    # Map the Top paddle to IJKL
     screen.onkeypress(t_paddle.go_up, "i")
     screen.onkeypress(t_paddle.go_down, "k")
     screen.onkeypress(t_paddle.go_left, "j")
     screen.onkeypress(t_paddle.go_right, "l")
 
-    # Score Tracker & Foul Timers
     scores = {"left": 0, "right": 0, "top": 0}
     scoreboard = Scoreboard()
-    unfreeze_time = {"left": 0, "right": 0, "top": 0}
-
     winning_score = 10 
 
-    # ----------------------------------------------------
-    # INNER GAME LOOP
-    # ----------------------------------------------------
     game_is_on = True
     while game_is_on:
         time.sleep(puck.move_speed)
         screen.update()
-
         current_time = time.time()
-        if not l_paddle.is_active and current_time > unfreeze_time["left"]:
-            l_paddle.unfreeze()
-        if not r_paddle.is_active and current_time > unfreeze_time["right"]:
-            r_paddle.unfreeze()
-        if not t_paddle.is_active and current_time > unfreeze_time["top"]:
-            t_paddle.unfreeze()
-
         puck.move()
 
-        # --- INPUT / AI LOGIC ---
         if not l_paddle.is_ai:
-            if "left" in active_controllers:
-                active_controllers["left"].update(l_paddle)
-        else:
-            l_paddle.ai_track(puck, "y")
+            if "left" in active_controllers: active_controllers["left"].update(l_paddle)
+        elif l_paddle.is_active:
+            l_paddle.ai_track_unhinged(puck)
 
         if not r_paddle.is_ai:
-            if "right" in active_controllers:
-                active_controllers["right"].update(r_paddle)
-        else:
-            r_paddle.ai_track(puck, "y")
+            if "right" in active_controllers: active_controllers["right"].update(r_paddle)
+        elif r_paddle.is_active:
+            r_paddle.ai_track_unhinged(puck)
 
         if not t_paddle.is_ai:
-            if "top" in active_controllers:
-                active_controllers["top"].update(t_paddle)
-        else:
-            t_paddle.ai_track(puck, "x")
+            if "top" in active_controllers: active_controllers["top"].update(t_paddle)
+        elif t_paddle.is_active:
+            t_paddle.ai_track_unhinged(puck)
 
-        # Clear on-screen messages when their timer expires
         if current_time > message_clear_time and current_message != "":
             messenger.clear()
             current_message = ""
@@ -184,50 +171,40 @@ while True:
         rx, ry = r_paddle.xcor(), r_paddle.ycor()
         tx, ty = t_paddle.xcor(), t_paddle.ycor()
 
-        # --- FOULS ---
+        # --- FOULS (PERMA-FREEZE) ---
         l_r_foul = is_touching(lx, ly, 40, 240, rx, ry, 40, 240)
         l_t_foul = is_touching(lx, ly, 40, 240, tx, ty, 240, 40)
         r_t_foul = is_touching(rx, ry, 40, 240, tx, ty, 240, 40)
-
         foul_occurred = False
 
         if l_r_foul and r_t_foul and l_t_foul:
-            show_message("MEGA FOUL! -1 Point All Around", 2.0)
-            scores["left"] -= 1
-            scores["right"] -= 1
-            scores["top"] -= 1
+            show_message(STRINGS[LANG]["grand_bash"], LANG, 2.0)
+            scores["left"] = max(0, scores["left"] - 1)
+            scores["right"] = max(0, scores["right"] - 1)
+            scores["top"] = max(0, scores["top"] - 1)
             scoreboard.update_scores(scores)
             
             l_paddle.freeze()
             r_paddle.freeze()
             t_paddle.freeze()
-            unfreeze_time["left"] = current_time + 5.0
-            unfreeze_time["right"] = current_time + 5.0
-            unfreeze_time["top"] = current_time + 5.0
             foul_occurred = True
 
         elif l_r_foul:
-            show_message("FOUL: Left & Right. Top gets free shot!", 2.0)
+            show_message(STRINGS[LANG]["foul_lr"], LANG, 2.0)
             l_paddle.freeze()
             r_paddle.freeze()
-            unfreeze_time["left"] = current_time + 5.0
-            unfreeze_time["right"] = current_time + 5.0
             foul_occurred = True
 
         elif l_t_foul:
-            show_message("FOUL: Left & Top. Right gets free shot!", 2.0)
+            show_message(STRINGS[LANG]["foul_lt"], LANG, 2.0)
             l_paddle.freeze()
             t_paddle.freeze()
-            unfreeze_time["left"] = current_time + 5.0
-            unfreeze_time["top"] = current_time + 5.0
             foul_occurred = True
 
         elif r_t_foul:
-            show_message("FOUL: Right & Top. Left gets free shot!", 2.0)
+            show_message(STRINGS[LANG]["foul_rt"], LANG, 2.0)
             r_paddle.freeze()
             t_paddle.freeze()
-            unfreeze_time["right"] = current_time + 5.0
-            unfreeze_time["top"] = current_time + 5.0
             foul_occurred = True
 
         if foul_occurred:
@@ -247,7 +224,7 @@ while True:
             if not handle_puck_collision(puck, r_paddle, 40, 240, "right", sound_manager):
                 handle_puck_collision(puck, t_paddle, 240, 40, "top", sound_manager)
 
-        # --- SCORING ---
+        # --- SCORING & GHOST PUCK ---
         goal_side = None
 
         if puck.xcor() < -1060:
@@ -262,65 +239,77 @@ while True:
 
         if goal_side:
             if puck.last_hitter is None:
-                show_message("Dead Puck! No points.", 2.0)
+                if goal_side == "left":
+                    scores["top"] += 1
+                    scores["right"] += 1
+                    show_message(STRINGS[LANG]["ghost_tr"], LANG, 2.0)
+                elif goal_side == "right":
+                    scores["top"] += 1
+                    scores["left"] += 1
+                    show_message(STRINGS[LANG]["ghost_tl"], LANG, 2.0)
+                elif goal_side == "top":
+                    scores["left"] += 1
+                    scores["right"] += 1
+                    show_message(STRINGS[LANG]["ghost_lr"], LANG, 2.0)
             else:
                 if goal_side == "left":
                     if puck.last_hitter == "top":
                         scores["top"] += 1
-                        show_message("Top scored!", 2.0)
+                        show_message(STRINGS[LANG]["score_t"], LANG, 2.0)
                     elif puck.last_hitter == "right":
                         scores["right"] += 1
-                        show_message("Right scored!", 2.0)
+                        show_message(STRINGS[LANG]["score_r"], LANG, 2.0)
                     elif puck.last_hitter == "left":
                         scores["top"] += 1
                         scores["right"] += 1
-                        show_message("Own Goal! Top & Right score.", 2.0)
+                        show_message(STRINGS[LANG]["own_tr"], LANG, 2.0)
 
                 elif goal_side == "right":
                     if puck.last_hitter == "top":
                         scores["top"] += 1
-                        show_message("Top scored!", 2.0)
+                        show_message(STRINGS[LANG]["score_t"], LANG, 2.0)
                     elif puck.last_hitter == "left":
                         scores["left"] += 1
-                        show_message("Left scored!", 2.0)
+                        show_message(STRINGS[LANG]["score_l"], LANG, 2.0)
                     elif puck.last_hitter == "right":
                         scores["top"] += 1
                         scores["left"] += 1
-                        show_message("Own Goal! Top & Left score.", 2.0)
+                        show_message(STRINGS[LANG]["own_tl"], LANG, 2.0)
 
                 elif goal_side == "top":
                     if puck.last_hitter == "left":
                         scores["left"] += 1
-                        show_message("Left scored!", 2.0)
+                        show_message(STRINGS[LANG]["score_l"], LANG, 2.0)
                     elif puck.last_hitter == "right":
                         scores["right"] += 1
-                        show_message("Right scored!", 2.0)
+                        show_message(STRINGS[LANG]["score_r"], LANG, 2.0)
                     elif puck.last_hitter == "top":
                         scores["left"] += 1
                         scores["right"] += 1
-                        show_message("Own Goal! Left & Right score.", 2.0)
+                        show_message(STRINGS[LANG]["own_lr"], LANG, 2.0)
 
             scoreboard.update_scores(scores)
             
-            # --- WIN CONDITION CHECK ---
+            # UNFREEZE EVERYONE AFTER A GOAL
+            l_paddle.unfreeze()
+            r_paddle.unfreeze()
+            t_paddle.unfreeze()
+            
             winners = [side.upper() for side, score in scores.items() if score >= winning_score]
             
             if winners:
                 if len(winners) > 1:
-                    show_message(f"TIE BREAK! FIRST TO {winning_score + 1} WINS!", 3.0)
+                    show_message(STRINGS[LANG]["tie_break"].format(winning_score + 1), LANG, 3.0)
                     winning_score += 1
-                    
                     puck.reset_position()
                     screen.update()
                     time.sleep(1.5)
                     continue
                 else:
                     sound_manager.stop_bgm() 
-                    show_message(f"MATCH OVER! {winners[0]} WINS!", 5.0)
+                    show_message(STRINGS[LANG]["match_over"].format(winners[0]), LANG, 5.0)
                     screen.update()
-                    
                     time.sleep(4.0) 
-                    
                     game_is_on = False
                     continue
 

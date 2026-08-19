@@ -1,5 +1,6 @@
 import time
 from turtle import Turtle
+from languages import STRINGS #type: ignore
 
 def run_setup_menu(screen):
     screen.clear()
@@ -11,9 +12,9 @@ def run_setup_menu(screen):
     drawer.color("white")
     drawer.penup()
 
-    # Shared state dictionary to safely track menu progress
     menu_state = {
-        "step": "COUNT",  
+        "step": "LANGUAGE",  
+        "lang": "en",
         "num_players": 0,
         "current_player": 1,
         "config": {"left": False, "right": False, "top": False},
@@ -21,105 +22,83 @@ def run_setup_menu(screen):
         "available": ["left", "right", "top"]
     }
     
-    # Keyboard mappings for the UI display
-    keyboard_map = {
-        "left": "WASD",
-        "right": "Arrow Keys",
-        "top": "IJKL"
-    }
+    lang_keys = list(STRINGS.keys())
 
     def draw_menu():
         drawer.clear()
-        drawer.goto(0, 200)
+        drawer.goto(0, 250)
         drawer.color("cyan")
-        drawer.write("TROCKEY 4K SETUP", align="center", font=("Courier", 48, "bold"))
+        
+        # Default to English title if language isn't picked yet
+        title_text = STRINGS[menu_state["lang"]]["setup_title"] if menu_state["step"] != "LANGUAGE" else "TROCKEY 4K SETUP"
+        drawer.write(title_text, align="center", font=("Courier", 48, "bold"))
         drawer.color("white")
         
-        if menu_state["step"] == "COUNT":
+        if menu_state["step"] == "LANGUAGE":
+            drawer.goto(0, 150)
+            drawer.write("Select Language:", align="center", font=("Courier", 30, "normal"))
+            y = 80
+            for i, l_code in enumerate(lang_keys):
+                drawer.goto(0, y)
+                drawer.write(f"Press {i+1} for {STRINGS[l_code]['name']}", align="center", font=("Courier", 24, "normal"))
+                y -= 40
+
+        elif menu_state["step"] == "COUNT":
             drawer.goto(0, 0)
-            drawer.write("How many humans? (Press 0, 1, 2, or 3)", align="center", font=("Courier", 36, "normal"))
+            drawer.write(STRINGS[menu_state["lang"]]["how_many"], align="center", font=("Courier", 36, "normal"))
             
         elif menu_state["step"] == "POSITION":
             drawer.goto(0, 50)
             drawer.color("yellow")
-            drawer.write(
-                f"Player {menu_state['current_player']} (Controller {menu_state['current_player']}), choose your side:", 
-                align="center", 
-                font=("Courier", 36, "bold")
-            )
+            prompt = STRINGS[menu_state["lang"]]["choose_side"].format(menu_state["current_player"])
+            drawer.write(prompt, align="center", font=("Courier", 36, "bold"))
             
             drawer.color("white")
             y = -50
             if "left" in menu_state["available"]:
                 drawer.goto(0, y)
-                drawer.write("Press 1 for LEFT (WASD)", align="center", font=("Courier", 24, "normal"))
+                drawer.write(STRINGS[menu_state["lang"]]["press_left"], align="center", font=("Courier", 24, "normal"))
             y -= 50
             if "right" in menu_state["available"]:
                 drawer.goto(0, y)
-                drawer.write("Press 2 for RIGHT (Arrow Keys)", align="center", font=("Courier", 24, "normal"))
+                drawer.write(STRINGS[menu_state["lang"]]["press_right"], align="center", font=("Courier", 24, "normal"))
             y -= 50
             if "top" in menu_state["available"]:
                 drawer.goto(0, y)
-                drawer.write("Press 3 for TOP (IJKL)", align="center", font=("Courier", 24, "normal"))
+                drawer.write(STRINGS[menu_state["lang"]]["press_top"], align="center", font=("Courier", 24, "normal"))
 
         elif menu_state["step"] == "DONE":
-            if menu_state["num_players"] == 0:
-                drawer.goto(0, 100)
-                drawer.color("green")
-                drawer.write("SPECTATOR MODE INITIATED", align="center", font=("Courier", 48, "bold"))
-                
-                drawer.goto(0, 0)
-                drawer.color("white")
-                drawer.write("All paddles set to AI.", align="center", font=("Courier", 24, "normal"))
-                
-                drawer.goto(0, -100)
-                drawer.color("yellow")
-                drawer.write("Dropping puck in 4 seconds...", align="center", font=("Courier", 24, "italic"))
-                
-            else:
-                drawer.goto(0, 100)
-                drawer.color("green")
-                drawer.write("ALL PLAYERS READY!", align="center", font=("Courier", 48, "bold"))
-                
-                drawer.goto(0, 20)
-                drawer.color("cyan")
-                drawer.write("--- PLAYER DIBS ---", align="center", font=("Courier", 36, "bold"))
-                
-                y = -50
-                drawer.color("white")
-                for i, pos in enumerate(menu_state["order"]):
-                    drawer.goto(0, y)
-                    drawer.write(
-                        f"Player {i+1} (Ctrl {i+1} / {keyboard_map[pos]}) -> {pos.upper()} PADDLE", 
-                        align="center", 
-                        font=("Courier", 24, "normal")
-                    )
-                    y -= 50
-                    
-                drawer.goto(0, y - 40)
-                drawer.color("yellow")
-                drawer.write("Dropping puck in 4 seconds...", align="center", font=("Courier", 24, "italic"))
+            drawer.goto(0, 100)
+            drawer.color("green")
+            drawer.write(STRINGS[menu_state["lang"]]["all_set"], align="center", font=("Courier", 48, "bold"))
+            drawer.goto(0, -100)
+            drawer.color("yellow")
+            drawer.write(STRINGS[menu_state["lang"]]["dropping_puck"], align="center", font=("Courier", 24, "italic"))
 
         screen.update()
 
     def handle_key(key):
-        if menu_state["step"] == "COUNT":
+        if menu_state["step"] == "LANGUAGE":
+            try:
+                idx = int(key) - 1
+                if 0 <= idx < len(lang_keys):
+                    menu_state["lang"] = lang_keys[idx]
+                    menu_state["step"] = "COUNT"
+                    draw_menu()
+            except ValueError:
+                pass
+                
+        elif menu_state["step"] == "COUNT":
             if key in ["0", "1", "2", "3"]:
                 menu_state["num_players"] = int(key)
-                if menu_state["num_players"] == 0:
-                    menu_state["step"] = "DONE"
-                else:
-                    menu_state["step"] = "POSITION"
+                menu_state["step"] = "DONE" if menu_state["num_players"] == 0 else "POSITION"
                 draw_menu()
         
         elif menu_state["step"] == "POSITION":
             choice = None
-            if key == "1" and "left" in menu_state["available"]:
-                choice = "left"
-            elif key == "2" and "right" in menu_state["available"]:
-                choice = "right"
-            elif key == "3" and "top" in menu_state["available"]:
-                choice = "top"
+            if key == "1" and "left" in menu_state["available"]: choice = "left"
+            elif key == "2" and "right" in menu_state["available"]: choice = "right"
+            elif key == "3" and "top" in menu_state["available"]: choice = "top"
             
             if choice:
                 menu_state["config"][choice] = True
@@ -132,35 +111,19 @@ def run_setup_menu(screen):
                     menu_state["step"] = "DONE"
                 draw_menu()
 
-    def press_0(): handle_key("0")
-    def press_1(): handle_key("1")
-    def press_2(): handle_key("2")
-    def press_3(): handle_key("3")
-
-    screen.listen()
-    screen.onkeypress(press_0, "0")
-    screen.onkeypress(press_1, "1")
-    screen.onkeypress(press_2, "2")
-    screen.onkeypress(press_3, "3")
+    for k in ["0", "1", "2", "3", "4", "5", "6", "7"]:
+        screen.onkeypress(lambda k=k: handle_key(k), k)
     
+    screen.listen()
     draw_menu()
     
-    # Wait until all selections are made
     while menu_state["step"] != "DONE":
         screen.update()
         time.sleep(0.05)
         
-    # Hold the confirmation / dibs screen for 4 seconds
     time.sleep(4.0) 
-    
-    # Unbind menu keys so they don't capture gameplay inputs
-    screen.onkeypress(None, "0")
-    screen.onkeypress(None, "1")
-    screen.onkeypress(None, "2")
-    screen.onkeypress(None, "3")
-    
-    # Clear the entire menu canvas and refresh the frame
+    for k in ["0", "1", "2", "3", "4", "5", "6", "7"]: screen.onkeypress(None, k)
     drawer.clear()
     screen.update()
     
-    return menu_state["config"], menu_state["order"]
+    return menu_state["config"], menu_state["order"], menu_state["lang"]
