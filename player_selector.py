@@ -11,7 +11,7 @@ def run_setup_menu(screen):
     drawer.color("white")
     drawer.penup()
 
-    # Shared state dictionary to safely track the menu progress
+    # Shared state dictionary to safely track menu progress
     menu_state = {
         "step": "COUNT",  
         "num_players": 0,
@@ -21,7 +21,7 @@ def run_setup_menu(screen):
         "available": ["left", "right", "top"]
     }
     
-    # Keyboard mappings for the UI
+    # Keyboard mappings for the UI display
     keyboard_map = {
         "left": "WASD",
         "right": "Arrow Keys",
@@ -42,7 +42,11 @@ def run_setup_menu(screen):
         elif menu_state["step"] == "POSITION":
             drawer.goto(0, 50)
             drawer.color("yellow")
-            drawer.write(f"Player {menu_state['current_player']} (Controller {menu_state['current_player']}), choose your side:", align="center", font=("Courier", 36, "bold"))
+            drawer.write(
+                f"Player {menu_state['current_player']} (Controller {menu_state['current_player']}), choose your side:", 
+                align="center", 
+                font=("Courier", 36, "bold")
+            )
             
             drawer.color("white")
             y = -50
@@ -85,8 +89,11 @@ def run_setup_menu(screen):
                 drawer.color("white")
                 for i, pos in enumerate(menu_state["order"]):
                     drawer.goto(0, y)
-                    # --- EXPLICITLY MAP BOTH CONTROLLERS AND KEYBOARDS ON THE FINAL SCREEN ---
-                    drawer.write(f"Player {i+1} (Ctrl {i+1} / {keyboard_map[pos]}) -> {pos.upper()} PADDLE", align="center", font=("Courier", 24, "normal"))
+                    drawer.write(
+                        f"Player {i+1} (Ctrl {i+1} / {keyboard_map[pos]}) -> {pos.upper()} PADDLE", 
+                        align="center", 
+                        font=("Courier", 24, "normal")
+                    )
                     y -= 50
                     
                 drawer.goto(0, y - 40)
@@ -138,15 +145,22 @@ def run_setup_menu(screen):
     
     draw_menu()
     
+    # Wait until all selections are made
     while menu_state["step"] != "DONE":
         screen.update()
         time.sleep(0.05)
         
+    # Hold the confirmation / dibs screen for 4 seconds
     time.sleep(4.0) 
     
+    # Unbind menu keys so they don't capture gameplay inputs
     screen.onkeypress(None, "0")
     screen.onkeypress(None, "1")
     screen.onkeypress(None, "2")
     screen.onkeypress(None, "3")
+    
+    # Clear the entire menu canvas and refresh the frame
+    drawer.clear()
+    screen.update()
     
     return menu_state["config"], menu_state["order"]
