@@ -11,7 +11,10 @@ DATA_FILES = [
 ]
 OPTIONS = {
     'iconfile': 'app_icon.icns', 
-    'packages': ['pygame', 'turtle', 'pyglet']
+    'packages': ['pygame', 'turtle'],
+    'plist': {
+        'ATSApplicationFontsPath': '.'
+    }
 }
 
 setup(
