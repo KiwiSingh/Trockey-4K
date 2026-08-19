@@ -7,8 +7,14 @@ from player_selector import run_setup_menu
 from scoreboard import Scoreboard
 from sound_manager import SoundManager
 
+# --- SCREEN SETUP & AUTO-SCALING ---
 screen = Screen()
-screen.setup(width=3840, height=2160)
+
+# width=1.0 and height=1.0 dynamically fills 100% of the player's monitor
+screen.setup(width=1.0, height=1.0)
+
+# Force the internal game logic to stay in 4K, no matter the physical monitor!
+screen.setworldcoordinates(-1920, -1080, 1920, 1080)
 
 # --- GLOBAL HELPER FUNCTIONS & VARIABLES ---
 current_message = ""
@@ -71,7 +77,7 @@ while True:
     # Wipes the entire screen from the previous match
     screen.clear()
     screen.bgcolor("black")
-    screen.title("Trockey 4K")
+    screen.title("Trockey 4K (Auto-Scaled)")
     screen.tracer(0)
 
     # Reset global message states for the new round
@@ -102,6 +108,7 @@ while True:
     t_controller = Controller(joystick_id=2)
 
     # --- Ephemeral Text Setup ---
+    global messenger
     messenger = Turtle()
     messenger.hideturtle()
     messenger.penup()
