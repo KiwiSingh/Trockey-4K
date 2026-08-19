@@ -14,6 +14,7 @@ def run_setup_menu(screen):
     menu_state = {
         "step": "LANGUAGE",  
         "lang": "en",
+        "lang_page": 0,
         "num_players": 0,
         "current_player": 1,
         "config": {"left": False, "right": False, "top": False},
@@ -25,7 +26,7 @@ def run_setup_menu(screen):
 
     def draw_menu():
         drawer.clear()
-        drawer.goto(0, 250)
+        drawer.goto(0, 300)
         drawer.color("cyan")
         
         title_text = STRINGS[menu_state["lang"]]["setup_title"] if menu_state["step"] != "LANGUAGE" else "TROCKEY 4K SETUP"
@@ -33,13 +34,23 @@ def run_setup_menu(screen):
         drawer.color("white")
         
         if menu_state["step"] == "LANGUAGE":
-            drawer.goto(0, 150)
-            drawer.write("Select Language:", align="center", font=("Courier", 30, "normal"))
-            y = 80
-            for i, l_code in enumerate(lang_keys):
+            drawer.goto(0, 200)
+            drawer.write("Select Language / भाषा चुनें:", align="center", font=("Courier", 30, "normal"))
+            
+            # Pagination logic
+            start_idx = menu_state["lang_page"] * 9
+            end_idx = min(start_idx + 9, len(lang_keys))
+            displayed_keys = lang_keys[start_idx:end_idx]
+
+            y = 120
+            for i, l_code in enumerate(displayed_keys):
                 drawer.goto(0, y)
-                drawer.write(f"Press {i+1} for {STRINGS[l_code]['name']}", align="center", font=("Courier", 24, "normal"))
-                y -= 40
+                drawer.write(f"Press {i+1} for {STRINGS[l_code]['name']}", align="center", font=("Courier", 22, "normal"))
+                y -= 35
+
+            drawer.goto(0, y - 20)
+            drawer.color("yellow")
+            drawer.write("Press 0 for Next Page", align="center", font=("Courier", 22, "italic"))
 
         elif menu_state["step"] == "COUNT":
             drawer.goto(0, 0)
@@ -77,14 +88,21 @@ def run_setup_menu(screen):
 
     def handle_key(key):
         if menu_state["step"] == "LANGUAGE":
-            try:
-                idx = int(key) - 1
-                if 0 <= idx < len(lang_keys):
-                    menu_state["lang"] = lang_keys[idx]
-                    menu_state["step"] = "COUNT"
-                    draw_menu()
-            except ValueError:
-                pass
+            if key == "0":
+                # Toggle between page 0 and 1
+                menu_state["lang_page"] = (menu_state["lang_page"] + 1) % 2
+                draw_menu()
+            else:
+                try:
+                    idx_offset = int(key) - 1
+                    if 0 <= idx_offset <= 8:
+                        actual_idx = (menu_state["lang_page"] * 9) + idx_offset
+                        if actual_idx < len(lang_keys):
+                            menu_state["lang"] = lang_keys[actual_idx]
+                            menu_state["step"] = "COUNT"
+                            draw_menu()
+                except ValueError:
+                    pass
                 
         elif menu_state["step"] == "COUNT":
             if key in ["0", "1", "2", "3"]:
@@ -109,7 +127,7 @@ def run_setup_menu(screen):
                     menu_state["step"] = "DONE"
                 draw_menu()
 
-    for k in ["0", "1", "2", "3", "4", "5", "6", "7"]:
+    for k in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]:
         screen.onkeypress(lambda k=k: handle_key(k), k)
     
     screen.listen()
@@ -123,7 +141,7 @@ def run_setup_menu(screen):
         time.sleep(0.05)
         screen.update()
         
-    for k in ["0", "1", "2", "3", "4", "5", "6", "7"]: 
+    for k in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]: 
         screen.onkeypress(None, k)
         
     drawer.clear()

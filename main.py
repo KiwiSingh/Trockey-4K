@@ -15,6 +15,13 @@ if sys.platform != "darwin":
         import pyglet
         pyglet.font.add_file(resource_path('NotoSansJP-Regular.ttf'))
         pyglet.font.add_file(resource_path('NotoSansDevanagari-Regular.ttf'))
+        pyglet.font.add_file(resource_path('NotoSansKR-Regular.ttf'))
+        pyglet.font.add_file(resource_path('NotoSansSC-Regular.ttf'))
+        pyglet.font.add_file(resource_path('NotoSansThai-Regular.ttf'))
+        pyglet.font.add_file(resource_path('NotoSansTamil-Regular.ttf'))
+        pyglet.font.add_file(resource_path('NotoSansTelugu-Regular.ttf'))
+        pyglet.font.add_file(resource_path('NotoSansMalayalam-Regular.ttf'))
+        pyglet.font.add_file(resource_path('NotoSansGujarati-Regular.ttf'))
     except Exception as e:
         print(f"Custom fonts not loaded, using system defaults: {e}")
 
@@ -30,13 +37,40 @@ current_message = ""
 message_clear_time = 0
 messenger = None
 
+# --- UI TOGGLE SETUP ---
+bgm_ui = Turtle()
+bgm_ui.hideturtle()
+bgm_ui.penup()
+bgm_ui.color("gray")
+bgm_ui.goto(-1850, 1000)
+
+def update_bgm_ui():
+    bgm_ui.clear()
+    state = "MUTED" if sound_manager.bgm_muted else "ON"
+    bgm_ui.write(f"BGM: {state} [Press M]", align="left", font=("Courier", 18, "bold"))
+
+def toggle_music():
+    sound_manager.toggle_bgm()
+    update_bgm_ui()
+
+screen.onkeypress(toggle_music, "m")
+screen.listen()
+
 def show_message(text, active_lang, duration=2.0):
     global current_message, message_clear_time, messenger
     if current_message != text:
         messenger.clear()
+        
         font_name = "Courier"
         if active_lang == "ja": font_name = "Noto Sans JP"
         elif active_lang in ["hi", "mr"]: font_name = "Noto Sans Devanagari"
+        elif active_lang == "ko": font_name = "Noto Sans KR"
+        elif active_lang == "zh": font_name = "Noto Sans SC"
+        elif active_lang == "th": font_name = "Noto Sans Thai"
+        elif active_lang == "ta": font_name = "Noto Sans Tamil"
+        elif active_lang == "te": font_name = "Noto Sans Telugu"
+        elif active_lang == "ml": font_name = "Noto Sans Malayalam"
+        elif active_lang == "gu": font_name = "Noto Sans Gujarati"
             
         messenger.write(text, align="center", font=(font_name, 64, "bold"))
         current_message = text
@@ -89,15 +123,18 @@ while True:
     screen.tracer(0)
     current_message = ""
     message_clear_time = 0
+    bgm_ui.clear()
 
-    # Run setup menu on the existing screen instance
     human_config, human_order, LANG = run_setup_menu(screen)
 
-    # Clean clear and redraw game state post-menu
     screen.clear()
     screen.bgcolor("black")
     screen.title("Trockey 4K (Auto-Scaled)")
     screen.tracer(0)
+
+    # Re-bind Mute UI to the fresh screen
+    screen.onkeypress(toggle_music, "m")
+    update_bgm_ui()
 
     sound_manager.start_bgm()
 

@@ -14,18 +14,18 @@ jobs:
         with:
           python-version: '3.10'
       - name: Install dependencies
-        run: pip install pygame py2app pillow pyglet
+        run: pip install pygame py2app pillow
       - name: Convert PNG to ICNS
         run: python -c "from PIL import Image; Image.open('trockey_app_icon.png').save('app_icon.icns')"
       - name: Build macOS App
         run: python setup.py py2app
       - name: Zip for Upload
-        run: cd dist && zip -r Trockey4K-macOS-v2.0.0.zip "Trockey 4K.app"
+        run: cd dist && zip -r Trockey4K-macOS-v2.1.0.zip "Trockey 4K.app"
       - name: Upload macOS Build
         uses: actions/upload-artifact@v4
         with:
-          name: Trockey4K-macOS-v2.0.0
-          path: dist/Trockey4K-macOS-v2.0.0.zip
+          name: Trockey4K-macOS-v2.1.0
+          path: dist/Trockey4K-macOS-v2.1.0.zip
 
   build-windows:
     runs-on: windows-latest
@@ -43,7 +43,7 @@ jobs:
       - name: Upload Windows Build
         uses: actions/upload-artifact@v4
         with:
-          name: Trockey4K-Windows-v2.0.0
+          name: Trockey4K-Windows-v2.1.0
           path: "dist/Trockey 4K.exe"
 
   build-linux:
@@ -63,5 +63,5 @@ jobs:
       - name: Upload Linux Build
         uses: actions/upload-artifact@v4
         with:
-          name: Trockey4K-Linux-v2.0.0
+          name: Trockey4K-Linux-v2.1.0
           path: "dist/Trockey 4K"
