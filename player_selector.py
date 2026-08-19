@@ -37,7 +37,7 @@ def run_setup_menu(screen):
             drawer.goto(0, 200)
             drawer.write("Select Language / भाषा चुनें:", align="center", font=("Courier", 30, "normal"))
             
-            # Pagination logic
+            # Dynamic pagination logic (supports 3 pages)
             start_idx = menu_state["lang_page"] * 9
             end_idx = min(start_idx + 9, len(lang_keys))
             displayed_keys = lang_keys[start_idx:end_idx]
@@ -89,8 +89,8 @@ def run_setup_menu(screen):
     def handle_key(key):
         if menu_state["step"] == "LANGUAGE":
             if key == "0":
-                # Toggle between page 0 and 1
-                menu_state["lang_page"] = (menu_state["lang_page"] + 1) % 2
+                # Toggle smoothly through all 3 pages
+                menu_state["lang_page"] = (menu_state["lang_page"] + 1) % 3
                 draw_menu()
             else:
                 try:

@@ -22,6 +22,9 @@ if sys.platform != "darwin":
         pyglet.font.add_file(resource_path('NotoSansTelugu-Regular.ttf'))
         pyglet.font.add_file(resource_path('NotoSansMalayalam-Regular.ttf'))
         pyglet.font.add_file(resource_path('NotoSansGujarati-Regular.ttf'))
+        pyglet.font.add_file(resource_path('NotoSansArabic-Regular.ttf'))
+        pyglet.font.add_file(resource_path('NotoSansBengali-Regular.ttf'))
+        pyglet.font.add_file(resource_path('NotoSansOriya-Regular.ttf'))
     except Exception as e:
         print(f"Custom fonts not loaded, using system defaults: {e}")
 
@@ -71,6 +74,9 @@ def show_message(text, active_lang, duration=2.0):
         elif active_lang == "te": font_name = "Noto Sans Telugu"
         elif active_lang == "ml": font_name = "Noto Sans Malayalam"
         elif active_lang == "gu": font_name = "Noto Sans Gujarati"
+        elif active_lang in ["ar", "ur"]: font_name = "Noto Sans Arabic"
+        elif active_lang in ["bn", "as"]: font_name = "Noto Sans Bengali"
+        elif active_lang == "or": font_name = "Noto Sans Oriya"
             
         messenger.write(text, align="center", font=(font_name, 64, "bold"))
         current_message = text

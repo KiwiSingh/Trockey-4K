@@ -14,7 +14,10 @@ DATA_FILES = [
     'NotoSansTamil-Regular.ttf',
     'NotoSansTelugu-Regular.ttf',
     'NotoSansMalayalam-Regular.ttf',
-    'NotoSansGujarati-Regular.ttf'
+    'NotoSansGujarati-Regular.ttf',
+    'NotoSansArabic-Regular.ttf',
+    'NotoSansBengali-Regular.ttf',
+    'NotoSansOriya-Regular.ttf'
 ]
 OPTIONS = {
     'iconfile': 'app_icon.icns', 
