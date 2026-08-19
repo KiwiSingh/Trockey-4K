@@ -46,7 +46,6 @@ messenger.goto(0, 300)
 current_message = ""
 message_clear_time = 0
 
-
 def show_message(text, duration=2.0):
     global current_message, message_clear_time
     if current_message != text:
@@ -60,7 +59,6 @@ def show_message(text, duration=2.0):
 def is_touching(x1, y1, w1, h1, x2, y2, w2, h2):
     return abs(x1 - x2) < (w1 + w2) and abs(y1 - y2) < (h1 + h2)
 
-
 # Pass the sound_manager in so it can trigger the SFX
 def handle_puck_collision(puck, paddle, pad_w, pad_h, player_name, snd_mgr):
     pad_x = paddle.xcor()
@@ -72,15 +70,15 @@ def handle_puck_collision(puck, paddle, pad_w, pad_h, player_name, snd_mgr):
     intersect_y = (50 + pad_h) - abs(dy)
 
     if intersect_x > 0 and intersect_y > 0:
-
+        
         # Trigger the paddle bounce sound!
         snd_mgr.play_paddle_bounce()
-
+        
         if paddle.is_active:
             puck.last_hitter = player_name
         else:
             puck.last_hitter = None
-
+        
         if intersect_x < intersect_y:
             if dx > 0:
                 puck.x_move = abs(puck.x_move)
@@ -95,13 +93,12 @@ def handle_puck_collision(puck, paddle, pad_w, pad_h, player_name, snd_mgr):
             else:
                 puck.y_move = -abs(puck.y_move)
                 puck.sety(pad_y - pad_h - 50)
-
+                
         puck.move_speed *= 0.9
         puck.move_speed = max(0.005, puck.move_speed)
 
         return True
     return False
-
 
 screen.listen()
 
@@ -126,8 +123,9 @@ screen.onkeypress(t_paddle.go_right, "l")
 # Score Tracker & Foul Timers
 scores = {"left": 0, "right": 0, "top": 0}
 scoreboard = Scoreboard()
-
 unfreeze_time = {"left": 0, "right": 0, "top": 0}
+
+winning_score = 10 # Sudden Death threshold!
 
 # Main Game Loop
 game_is_on = True
@@ -187,7 +185,7 @@ while game_is_on:
         scores["right"] -= 1
         scores["top"] -= 1
         scoreboard.update_scores(scores)
-
+        
         l_paddle.freeze()
         r_paddle.freeze()
         t_paddle.freeze()
@@ -221,17 +219,18 @@ while game_is_on:
         foul_occurred = True
 
     if foul_occurred:
-        sound_manager.play_paddle_bounce()
-        sound_manager.play_freeze()  # Trigger the ice freeze sound!
+        sound_manager.play_paddle_bounce() # The "Clack"
+        sound_manager.play_freeze()        # The "Shatter"
+        
         l_paddle.goto(-1000, 0)
         r_paddle.goto(1000, 0)
         t_paddle.goto(0, 1000)
         puck.reset_position()
         screen.update()
         time.sleep(1.5)
-        continue
+        continue 
 
-        # ----------------------------------------------------
+    # ----------------------------------------------------
     # PUCK TO PADDLE COLLISIONS
     # ----------------------------------------------------
     if not handle_puck_collision(puck, l_paddle, 40, 240, "left", sound_manager):
@@ -251,7 +250,7 @@ while game_is_on:
         goal_side = "top"
     elif puck.ycor() < -1060:
         puck.bounce_y()
-        sound_manager.play_wall_bounce()  # Trigger the wall bounce sound!
+        sound_manager.play_wall_bounce()
 
     if goal_side:
         if puck.last_hitter is None:
@@ -294,20 +293,27 @@ while game_is_on:
                     show_message("Own Goal! Left & Right score.", 2.0)
 
         scoreboard.update_scores(scores)
-
+        
         # --- WIN CONDITION CHECK ---
-        winners = [side.upper() for side, score in scores.items() if score >= 10]
-
+        winners = [side.upper() for side, score in scores.items() if score >= winning_score]
+        
         if winners:
-            sound_manager.stop_bgm()  # Kill the background music!
             if len(winners) > 1:
-                show_message(f"TIE BREAK! {' & '.join(winners)} WIN!", 5.0)
+                # Tie break mode activated!
+                show_message(f"TIE BREAK! FIRST TO {winning_score + 1} WINS!", 3.0)
+                winning_score += 1
+                
+                puck.reset_position()
+                screen.update()
+                time.sleep(1.5)
+                continue
             else:
+                # Match Over!
+                sound_manager.stop_bgm() 
                 show_message(f"MATCH OVER! {winners[0]} WINS!", 5.0)
-
-            screen.update()
-            game_is_on = False
-            continue
+                screen.update()
+                game_is_on = False
+                continue
 
         puck.reset_position()
         screen.update()
