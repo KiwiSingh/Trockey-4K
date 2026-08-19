@@ -18,7 +18,7 @@ if sys.platform != "darwin":
     except Exception as e:
         print(f"Custom fonts not loaded, using system defaults: {e}")
 
-# Initialize audio ONCE, before the loop to prevent macOS SDL crash!
+# Initialize audio ONCE on launch
 sound_manager = SoundManager()
 
 # --- SCREEN SETUP & AUTO-SCALING ---
@@ -34,8 +34,6 @@ def show_message(text, active_lang, duration=2.0):
     global current_message, message_clear_time, messenger
     if current_message != text:
         messenger.clear()
-        
-        # Use appropriate font fallback based on language (Marathi shares Hindi font)
         font_name = "Courier"
         if active_lang == "ja": font_name = "Noto Sans JP"
         elif active_lang in ["hi", "mr"]: font_name = "Noto Sans Devanagari"
@@ -88,17 +86,19 @@ def handle_puck_collision(puck, paddle, pad_w, pad_h, player_name, snd_mgr):
 # MAIN ARCADE LOOP
 # ==========================================
 while True:
+    screen.tracer(0)
+    current_message = ""
+    message_clear_time = 0
+
+    # Run setup menu on the existing screen instance
+    human_config, human_order, LANG = run_setup_menu(screen)
+
+    # Clean clear and redraw game state post-menu
     screen.clear()
     screen.bgcolor("black")
     screen.title("Trockey 4K (Auto-Scaled)")
     screen.tracer(0)
 
-    current_message = ""
-    message_clear_time = 0
-
-    human_config, human_order, LANG = run_setup_menu(screen)
-
-    # Start the music here using the pre-initialized sound_manager
     sound_manager.start_bgm()
 
     l_paddle = Paddle((-1000, 0), (24, 4), x_bounds=(-1880, 0), y_bounds=(-1040, 1040))
@@ -294,7 +294,6 @@ while True:
 
             scoreboard.update_scores(scores)
             
-            # UNFREEZE EVERYONE AFTER A GOAL
             l_paddle.unfreeze()
             r_paddle.unfreeze()
             t_paddle.unfreeze()
