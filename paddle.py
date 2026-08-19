@@ -1,88 +1,71 @@
 from turtle import Turtle
-
+import random
 
 class Paddle(Turtle):
-    def __init__(self, position, stretch_factor, x_bounds, y_bounds):
+    def __init__(self, position, stretch_len, x_bounds, y_bounds):
         super().__init__()
         self.shape("square")
-        self.shapesize(*stretch_factor)
         self.color("white")
+        self.shapesize(stretch_wid=stretch_len[1], stretch_len=stretch_len[0])
         self.penup()
         self.goto(position)
-
-        self.is_active = True
-        self.is_ai = False
-
-        # Store the specific screen boundaries for this paddle
         self.x_bounds = x_bounds
         self.y_bounds = y_bounds
+        self.is_active = True
+        self.is_ai = False
+        self.move_speed = 20
+
+    def go_up(self):
+        if self.is_active and self.ycor() + self.move_speed <= self.y_bounds[1]:
+            new_y = self.ycor() + self.move_speed
+            self.goto(self.xcor(), new_y)
+
+    def go_down(self):
+        if self.is_active and self.ycor() - self.move_speed >= self.y_bounds[0]:
+            new_y = self.ycor() - self.move_speed
+            self.goto(self.xcor(), new_y)
+
+    def go_left(self):
+        if self.is_active and self.xcor() - self.move_speed >= self.x_bounds[0]:
+            new_x = self.xcor() - self.move_speed
+            self.goto(new_x, self.ycor())
+
+    def go_right(self):
+        if self.is_active and self.xcor() + self.move_speed <= self.x_bounds[1]:
+            new_x = self.xcor() + self.move_speed
+            self.goto(new_x, self.ycor())
 
     def freeze(self):
         self.is_active = False
-        self.color("cyan")  # Turns blue so you visually KNOW you are frozen!
+        self.color("blue")
 
     def unfreeze(self):
         self.is_active = True
         self.color("white")
 
-    def move_x(self, amount):
+    def ai_track_unhinged(self, puck, primary_axis):
         if not self.is_active:
             return
-        new_x = self.xcor() + amount
-        new_x = max(self.x_bounds[0], min(new_x, self.x_bounds[1]))
-        self.setx(new_x)
-
-    def move_y(self, amount):
-        if not self.is_active:
-            return
-        new_y = self.ycor() + amount
-        new_y = max(self.y_bounds[0], min(new_y, self.y_bounds[1]))
-        self.sety(new_y)
-
-    def ai_track(self, puck, axis):
-        if not self.is_active or not self.is_ai:
-            return
-
-        ai_speed = 15
-
-        if axis == "y":
-            if self.ycor() < puck.ycor() - 10:
-                self.move_y(ai_speed)
-            elif self.ycor() > puck.ycor() + 10:
-                self.move_y(-ai_speed)
-
-        elif axis == "x":
+            
+        move_x = False
+        move_y = False
+        
+        # 100% chance to track their main defensive line, 15% chance to aggressively drift
+        if primary_axis == "y":
+            move_y = True
+            move_x = random.random() < 0.15
+        else:
+            move_x = True
+            move_y = random.random() < 0.15
+            
+        if move_x:
             if self.xcor() < puck.xcor() - 10:
-                self.move_x(ai_speed)
+                self.go_right()
             elif self.xcor() > puck.xcor() + 10:
-                self.move_x(-ai_speed)
-
-    # --- KEYBOARD LOCKS ---
-    def go_up(self):
-        if self.is_active:
-            self.move_y(72)
-
-    def go_down(self):
-        if self.is_active:
-            self.move_y(-72)
-
-    def go_right(self):
-        if self.is_active:
-            self.move_x(72)
-
-    def go_left(self):
-        if self.is_active:
-            self.move_x(-72)
-            
-    def ai_track_unhinged(self, puck):
-        # Move X
-        if self.xcor() < puck.xcor() - 10:
-            self.go_right()
-        elif self.xcor() > puck.xcor() + 10:
-            self.go_left()
-            
-        # Move Y
-        if self.ycor() < puck.ycor() - 10:
-            self.go_up()
-        elif self.ycor() > puck.ycor() + 10:
-            self.go_down()
+                self.go_left()
+                
+        if move_y:
+            if self.ycor() < puck.ycor() - 10:
+                self.go_up()
+            elif self.ycor() > puck.ycor() + 10:
+                self.go_down()

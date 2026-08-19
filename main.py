@@ -154,17 +154,17 @@ while True:
         if not l_paddle.is_ai:
             if "left" in active_controllers: active_controllers["left"].update(l_paddle)
         elif l_paddle.is_active:
-            l_paddle.ai_track_unhinged(puck)
+            l_paddle.ai_track_unhinged(puck, "y")
 
         if not r_paddle.is_ai:
             if "right" in active_controllers: active_controllers["right"].update(r_paddle)
         elif r_paddle.is_active:
-            r_paddle.ai_track_unhinged(puck)
+            r_paddle.ai_track_unhinged(puck, "y")
 
         if not t_paddle.is_ai:
             if "top" in active_controllers: active_controllers["top"].update(t_paddle)
         elif t_paddle.is_active:
-            t_paddle.ai_track_unhinged(puck)
+            t_paddle.ai_track_unhinged(puck, "x")
 
         if current_time > message_clear_time and current_message != "":
             messenger.clear()
