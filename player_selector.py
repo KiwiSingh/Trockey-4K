@@ -1,87 +1,147 @@
 import time
 from turtle import Turtle
 
-
 def run_setup_menu(screen):
-    menu_pen = Turtle()
-    menu_pen.hideturtle()
-    menu_pen.penup()
-    menu_pen.color("white")
+    screen.clear()
+    screen.bgcolor("black")
+    screen.tracer(0)
 
-    # By default, assume all paddles are AI. We will flip them to True based on choices.
-    config = {"left": False, "right": False, "top": False, "done": False}
+    drawer = Turtle()
+    drawer.hideturtle()
+    drawer.color("white")
+    drawer.penup()
 
-    # We use a list for state so we can modify it inside our helper functions
-    state = ["count"]
+    # Shared state dictionary to safely track the menu progress
+    menu_state = {
+        "step": "COUNT",  
+        "num_players": 0,
+        "current_player": 1,
+        "config": {"left": False, "right": False, "top": False},
+        "order": [],
+        "available": ["left", "right", "top"]
+    }
 
-    def draw_text(text):
-        menu_pen.clear()
-        menu_pen.goto(0, 0)
-        menu_pen.write(text, align="center", font=("Courier", 48, "bold"))
+    def draw_menu():
+        drawer.clear()
+        drawer.goto(0, 200)
+        drawer.color("cyan")
+        drawer.write("TROCKEY 4K SETUP", align="center", font=("Courier", 48, "bold"))
+        drawer.color("white")
+        
+        if menu_state["step"] == "COUNT":
+            drawer.goto(0, 0)
+            drawer.write("How many humans? (Press 0, 1, 2, or 3)", align="center", font=("Courier", 36, "normal"))
+            
+        elif menu_state["step"] == "POSITION":
+            drawer.goto(0, 50)
+            drawer.color("yellow")
+            drawer.write(f"Player {menu_state['current_player']} (Controller {menu_state['current_player']}), choose your side:", align="center", font=("Courier", 36, "bold"))
+            
+            drawer.color("white")
+            y = -50
+            if "left" in menu_state["available"]:
+                drawer.goto(0, y)
+                drawer.write("Press 1 for LEFT", align="center", font=("Courier", 24, "normal"))
+            y -= 50
+            if "right" in menu_state["available"]:
+                drawer.goto(0, y)
+                drawer.write("Press 2 for RIGHT", align="center", font=("Courier", 24, "normal"))
+            y -= 50
+            if "top" in menu_state["available"]:
+                drawer.goto(0, y)
+                drawer.write("Press 3 for TOP", align="center", font=("Courier", 24, "normal"))
+
+        elif menu_state["step"] == "DONE":
+            # --- SPECTATOR MODE UI ---
+            if menu_state["num_players"] == 0:
+                drawer.goto(0, 100)
+                drawer.color("green")
+                drawer.write("SPECTATOR MODE INITIATED", align="center", font=("Courier", 48, "bold"))
+                
+                drawer.goto(0, 0)
+                drawer.color("white")
+                drawer.write("All paddles set to AI.", align="center", font=("Courier", 24, "normal"))
+                
+                drawer.goto(0, -100)
+                drawer.color("yellow")
+                drawer.write("Dropping puck in 4 seconds...", align="center", font=("Courier", 24, "italic"))
+                
+            # --- NORMAL HUMAN UI ---
+            else:
+                drawer.goto(0, 100)
+                drawer.color("green")
+                drawer.write("ALL PLAYERS READY!", align="center", font=("Courier", 48, "bold"))
+                
+                drawer.goto(0, 20)
+                drawer.color("cyan")
+                drawer.write("--- CONTROLLER DIBS ---", align="center", font=("Courier", 36, "bold"))
+                
+                y = -50
+                drawer.color("white")
+                for i, pos in enumerate(menu_state["order"]):
+                    drawer.goto(0, y)
+                    drawer.write(f"Player {i+1} (Controller {i+1}) -> {pos.upper()} PADDLE", align="center", font=("Courier", 24, "normal"))
+                    y -= 50
+                    
+                drawer.goto(0, y - 40)
+                drawer.color("yellow")
+                drawer.write("Dropping puck in 4 seconds...", align="center", font=("Courier", 24, "italic"))
+
         screen.update()
 
-    def set_count(n):
-        if state[0] != "count": return
+    def handle_key(key):
+        if menu_state["step"] == "COUNT":
+            if key in ["0", "1", "2", "3"]:
+                menu_state["num_players"] = int(key)
+                # Skip straight to done if 0 humans are playing!
+                if menu_state["num_players"] == 0:
+                    menu_state["step"] = "DONE"
+                else:
+                    menu_state["step"] = "POSITION"
+                draw_menu()
+        
+        elif menu_state["step"] == "POSITION":
+            choice = None
+            if key == "1" and "left" in menu_state["available"]:
+                choice = "left"
+            elif key == "2" and "right" in menu_state["available"]:
+                choice = "right"
+            elif key == "3" and "top" in menu_state["available"]:
+                choice = "top"
+            
+            if choice:
+                menu_state["config"][choice] = True
+                menu_state["order"].append(choice)
+                menu_state["available"].remove(choice)
+                
+                if menu_state["current_player"] < menu_state["num_players"]:
+                    menu_state["current_player"] += 1
+                else:
+                    menu_state["step"] = "DONE"
+                draw_menu()
 
-        if n == 0:
-            config["done"] = True
-        elif n == 3:
-            config["left"] = True
-            config["right"] = True
-            config["top"] = True
-            config["done"] = True
-        elif n == 1:
-            state[0] = "pos1"
-            draw_text("1 PLAYER MODE\n\nSelect your position:\nPress (L)eft, (R)ight, or (T)op")
-        elif n == 2:
-            state[0] = "pos2"
-            draw_text(
-                "2 PLAYER MODE\n\nSelect human positions:\nPress (1) Left & Right\nPress (2) Left & Top\nPress (3) Right & Top")
-
-    def handle_pos1(pos):
-        if state[0] != "pos1": return
-        config[pos] = True
-        config["done"] = True
-
-    def handle_pos2(choice):
-        if state[0] != "pos2": return
-        if choice == 1:
-            config["left"] = True
-            config["right"] = True
-        elif choice == 2:
-            config["left"] = True
-            config["top"] = True
-        elif choice == 3:
-            config["right"] = True
-            config["top"] = True
-        config["done"] = True
+    def press_0(): handle_key("0")
+    def press_1(): handle_key("1")
+    def press_2(): handle_key("2")
+    def press_3(): handle_key("3")
 
     screen.listen()
-
-    # Number selection keys
-    screen.onkeypress(lambda: set_count(0), "0")
-    screen.onkeypress(lambda: set_count(1), "1")
-    screen.onkeypress(lambda: set_count(2), "2")
-    screen.onkeypress(lambda: set_count(3), "3")
-
-    # Position selection keys (for 1 Player mode)
-    screen.onkeypress(lambda: handle_pos1("left"), "l")
-    screen.onkeypress(lambda: handle_pos1("right"), "r")
-    screen.onkeypress(lambda: handle_pos1("top"), "t")
-
-    # Initial Menu Draw
-    draw_text("TROCKEY 4K\n\nHow many human players?\nPress 0, 1, 2, or 3")
-
-    # Halt the rest of the game from loading until a choice is finalized
-    while not config["done"]:
+    screen.onkeypress(press_0, "0")
+    screen.onkeypress(press_1, "1")
+    screen.onkeypress(press_2, "2")
+    screen.onkeypress(press_3, "3")
+    
+    draw_menu()
+    
+    while menu_state["step"] != "DONE":
         screen.update()
         time.sleep(0.05)
-
-    # --- Cleanup ---
-    # Unbind menu keys so they don't interfere with the game controls later
-    for key in ["0", "1", "2", "3", "l", "r", "t"]:
-        screen.onkeypress(None, key)
-
-    menu_pen.clear()
-
-    return config
+        
+    time.sleep(4.0) 
+    
+    screen.onkeypress(None, "0")
+    screen.onkeypress(None, "1")
+    screen.onkeypress(None, "2")
+    screen.onkeypress(None, "3")
+    
+    return menu_state["config"], menu_state["order"]
