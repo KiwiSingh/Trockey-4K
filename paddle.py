@@ -6,7 +6,8 @@ class Paddle(Turtle):
         super().__init__()
         self.shape("square")
         self.color("white")
-        self.shapesize(stretch_wid=stretch_len[1], stretch_len=stretch_len[0])
+        # FIX: Mapped correctly so vertical/horizontal paddles render as intended!
+        self.shapesize(stretch_wid=stretch_len[0], stretch_len=stretch_len[1])
         self.penup()
         self.goto(position)
         self.x_bounds = x_bounds
@@ -15,25 +16,31 @@ class Paddle(Turtle):
         self.is_ai = False
         self.move_speed = 20
 
-    def go_up(self):
-        if self.is_active and self.ycor() + self.move_speed <= self.y_bounds[1]:
-            new_y = self.ycor() + self.move_speed
+    # Analog movement methods for the DualSense controller
+    def move_y(self, amount):
+        if self.is_active:
+            new_y = self.ycor() + amount
+            new_y = max(self.y_bounds[0], min(self.y_bounds[1], new_y))
             self.goto(self.xcor(), new_y)
+
+    def move_x(self, amount):
+        if self.is_active:
+            new_x = self.xcor() + amount
+            new_x = max(self.x_bounds[0], min(self.x_bounds[1], new_x))
+            self.goto(new_x, self.ycor())
+
+    # Keyboard movement wrappers
+    def go_up(self):
+        self.move_y(self.move_speed)
 
     def go_down(self):
-        if self.is_active and self.ycor() - self.move_speed >= self.y_bounds[0]:
-            new_y = self.ycor() - self.move_speed
-            self.goto(self.xcor(), new_y)
+        self.move_y(-self.move_speed)
 
     def go_left(self):
-        if self.is_active and self.xcor() - self.move_speed >= self.x_bounds[0]:
-            new_x = self.xcor() - self.move_speed
-            self.goto(new_x, self.ycor())
+        self.move_x(-self.move_speed)
 
     def go_right(self):
-        if self.is_active and self.xcor() + self.move_speed <= self.x_bounds[1]:
-            new_x = self.xcor() + self.move_speed
-            self.goto(new_x, self.ycor())
+        self.move_x(self.move_speed)
 
     def freeze(self):
         self.is_active = False
