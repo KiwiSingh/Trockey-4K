@@ -9,11 +9,7 @@ from sound_manager import SoundManager
 
 # --- SCREEN SETUP & AUTO-SCALING ---
 screen = Screen()
-
-# width=1.0 and height=1.0 dynamically fills 100% of the player's monitor
 screen.setup(width=1.0, height=1.0)
-
-# Force the internal game logic to stay in 4K, no matter the physical monitor!
 screen.setworldcoordinates(-1920, -1080, 1920, 1080)
 
 # --- GLOBAL HELPER FUNCTIONS & VARIABLES ---
@@ -70,44 +66,44 @@ def handle_puck_collision(puck, paddle, pad_w, pad_h, player_name, snd_mgr):
         return True
     return False
 
+
 # ==========================================
 # MAIN ARCADE LOOP (Restarts after every win)
 # ==========================================
 while True:
-    # Wipes the entire screen from the previous match
     screen.clear()
     screen.bgcolor("black")
     screen.title("Trockey 4K (Auto-Scaled)")
     screen.tracer(0)
 
-    # Reset global message states for the new round
+    # Reset message states for the new game
     current_message = ""
     message_clear_time = 0
 
-    # 1. Run the visual menu before spawning the objects
-    human_config = run_setup_menu(screen)
+    human_config, human_order = run_setup_menu(screen)
 
-    # 2. Start the Audio Engine and loop the BGM!
     sound_manager = SoundManager()
     sound_manager.start_bgm()
 
-    # 3. Set positions, stretch factors, and territorial boundaries
     l_paddle = Paddle((-1000, 0), (24, 4), x_bounds=(-1880, 0), y_bounds=(-1040, 1040))
     r_paddle = Paddle((1000, 0), (24, 4), x_bounds=(0, 1880), y_bounds=(-1040, 1040))
     t_paddle = Paddle((0, 1000), (4, 24), x_bounds=(-1880, 1880), y_bounds=(0, 1040))
     puck = Puck()
 
-    # 4. Assign AI flags based on the menu configuration
     l_paddle.is_ai = not human_config["left"]
     r_paddle.is_ai = not human_config["right"]
     t_paddle.is_ai = not human_config["top"]
 
-    # 5. Initialize three separate controllers
-    l_controller = Controller(joystick_id=0)
-    r_controller = Controller(joystick_id=1)
-    t_controller = Controller(joystick_id=2)
+    # Initialize controllers dynamically with a crash-proof safety net
+    active_controllers = {}
+    for index, position in enumerate(human_order):
+        try:
+            active_controllers[position] = Controller(joystick_id=index)
+        except Exception:
+            pass
 
     # --- Ephemeral Text Setup ---
+    # We redefine messenger here because screen.clear() wiped the old one out
     messenger = Turtle()
     messenger.hideturtle()
     messenger.penup()
@@ -161,20 +157,24 @@ while True:
 
         # --- INPUT / AI LOGIC ---
         if not l_paddle.is_ai:
-            l_controller.update(l_paddle)
+            if "left" in active_controllers:
+                active_controllers["left"].update(l_paddle)
         else:
             l_paddle.ai_track(puck, "y")
 
         if not r_paddle.is_ai:
-            r_controller.update(r_paddle)
+            if "right" in active_controllers:
+                active_controllers["right"].update(r_paddle)
         else:
             r_paddle.ai_track(puck, "y")
 
         if not t_paddle.is_ai:
-            t_controller.update(t_paddle)
+            if "top" in active_controllers:
+                active_controllers["top"].update(t_paddle)
         else:
             t_paddle.ai_track(puck, "x")
 
+        # Clear on-screen messages when their timer expires
         if current_time > message_clear_time and current_message != "":
             messenger.clear()
             current_message = ""
@@ -319,10 +319,8 @@ while True:
                     show_message(f"MATCH OVER! {winners[0]} WINS!", 5.0)
                     screen.update()
                     
-                    # Pauses the game for 4 seconds so the winner can gloat
                     time.sleep(4.0) 
                     
-                    # Breaks the inner loop, forcing the outer 'while True' to restart!
                     game_is_on = False
                     continue
 

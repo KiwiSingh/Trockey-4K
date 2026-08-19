@@ -20,6 +20,13 @@ def run_setup_menu(screen):
         "order": [],
         "available": ["left", "right", "top"]
     }
+    
+    # Keyboard mappings for the UI
+    keyboard_map = {
+        "left": "WASD",
+        "right": "Arrow Keys",
+        "top": "IJKL"
+    }
 
     def draw_menu():
         drawer.clear()
@@ -41,18 +48,17 @@ def run_setup_menu(screen):
             y = -50
             if "left" in menu_state["available"]:
                 drawer.goto(0, y)
-                drawer.write("Press 1 for LEFT", align="center", font=("Courier", 24, "normal"))
+                drawer.write("Press 1 for LEFT (WASD)", align="center", font=("Courier", 24, "normal"))
             y -= 50
             if "right" in menu_state["available"]:
                 drawer.goto(0, y)
-                drawer.write("Press 2 for RIGHT", align="center", font=("Courier", 24, "normal"))
+                drawer.write("Press 2 for RIGHT (Arrow Keys)", align="center", font=("Courier", 24, "normal"))
             y -= 50
             if "top" in menu_state["available"]:
                 drawer.goto(0, y)
-                drawer.write("Press 3 for TOP", align="center", font=("Courier", 24, "normal"))
+                drawer.write("Press 3 for TOP (IJKL)", align="center", font=("Courier", 24, "normal"))
 
         elif menu_state["step"] == "DONE":
-            # --- SPECTATOR MODE UI ---
             if menu_state["num_players"] == 0:
                 drawer.goto(0, 100)
                 drawer.color("green")
@@ -66,7 +72,6 @@ def run_setup_menu(screen):
                 drawer.color("yellow")
                 drawer.write("Dropping puck in 4 seconds...", align="center", font=("Courier", 24, "italic"))
                 
-            # --- NORMAL HUMAN UI ---
             else:
                 drawer.goto(0, 100)
                 drawer.color("green")
@@ -74,13 +79,14 @@ def run_setup_menu(screen):
                 
                 drawer.goto(0, 20)
                 drawer.color("cyan")
-                drawer.write("--- CONTROLLER DIBS ---", align="center", font=("Courier", 36, "bold"))
+                drawer.write("--- PLAYER DIBS ---", align="center", font=("Courier", 36, "bold"))
                 
                 y = -50
                 drawer.color("white")
                 for i, pos in enumerate(menu_state["order"]):
                     drawer.goto(0, y)
-                    drawer.write(f"Player {i+1} (Controller {i+1}) -> {pos.upper()} PADDLE", align="center", font=("Courier", 24, "normal"))
+                    # --- EXPLICITLY MAP BOTH CONTROLLERS AND KEYBOARDS ON THE FINAL SCREEN ---
+                    drawer.write(f"Player {i+1} (Ctrl {i+1} / {keyboard_map[pos]}) -> {pos.upper()} PADDLE", align="center", font=("Courier", 24, "normal"))
                     y -= 50
                     
                 drawer.goto(0, y - 40)
@@ -93,7 +99,6 @@ def run_setup_menu(screen):
         if menu_state["step"] == "COUNT":
             if key in ["0", "1", "2", "3"]:
                 menu_state["num_players"] = int(key)
-                # Skip straight to done if 0 humans are playing!
                 if menu_state["num_players"] == 0:
                     menu_state["step"] = "DONE"
                 else:
