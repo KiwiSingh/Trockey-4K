@@ -14,9 +14,9 @@ jobs:
         with:
           python-version: '3.10'
       - name: Install dependencies
-        run: pip install pygame py2app
+        run: pip install pygame py2app pillow
       - name: Convert PNG to ICNS
-        run: sips -s format icns trockey_app_icon.png --out app_icon.icns
+        run: python -c "from PIL import Image; Image.open('trockey_app_icon.png').save('app_icon.icns')"
       - name: Build macOS App
         run: python setup.py py2app
       - name: Zip for Upload
