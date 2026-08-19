@@ -40,12 +40,12 @@ jobs:
         run: python -c "from PIL import Image; Image.open('trockey_app_icon.png').save('app_icon.ico')"
       - name: Build Windows Exe
         # Notice the semicolon ';' separator for Windows data files
-        run: pyinstaller --noconsole --onedir --name "Trockey 4K" --icon=app_icon.ico --add-data "*.wav;." --add-data "*.mp3;." main.py
+        run: pyinstaller --noconsole --onefile --name "Trockey 4K" --icon=app_icon.ico --add-data "*.wav;." --add-data "*.mp3;." main.py
       - name: Upload Windows Build
         uses: actions/upload-artifact@v4
         with:
           name: Trockey4K-Windows
-          path: dist/Trockey 4K
+          path: "dist/Trockey 4K.exe"
 
   build-linux:
     runs-on: ubuntu-latest
@@ -61,9 +61,9 @@ jobs:
           pip install pygame pyinstaller
       - name: Build Linux Executable
         # Notice the colon ':' separator for Linux data files
-        run: pyinstaller --noconsole --onedir --name "Trockey 4K" --add-data "*.wav:." --add-data "*.mp3:." main.py
+        run: pyinstaller --noconsole --onefile --name "Trockey 4K" --add-data "*.wav:." --add-data "*.mp3:." main.py
       - name: Upload Linux Build
         uses: actions/upload-artifact@v4
         with:
           name: Trockey4K-Linux
-          path: dist/Trockey 4K
+          path: "dist/Trockey 4K"
