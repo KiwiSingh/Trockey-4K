@@ -1,5 +1,5 @@
+import sys
 import time
-import pyglet #type: ignore
 from turtle import Screen, Turtle
 from controller import Controller
 from paddle import Paddle
@@ -7,14 +7,17 @@ from puck import Puck
 from player_selector import run_setup_menu
 from scoreboard import Scoreboard
 from sound_manager import SoundManager, resource_path
-from languages import STRINGS #type: ignore
+from languages import STRINGS
 
-# --- FONT LOADING ---
-try:
-    pyglet.font.add_file(resource_path('NotoSansJP-Regular.ttf'))
-    pyglet.font.add_file(resource_path('NotoSansDevanagari-Regular.ttf'))
-except Exception as e:
-    print(f"Custom fonts not loaded, using system defaults: {e}")
+# --- FONT LOADING (WINDOWS & LINUX ONLY) ---
+# Prevents NSApplication crash by avoiding Pyglet initialization on macOS
+if sys.platform != "darwin":
+    try:
+        import pyglet
+        pyglet.font.add_file(resource_path('NotoSansJP-Regular.ttf'))
+        pyglet.font.add_file(resource_path('NotoSansDevanagari-Regular.ttf'))
+    except Exception as e:
+        print(f"Custom fonts not loaded, using system defaults: {e}")
 
 # --- SCREEN SETUP & AUTO-SCALING ---
 screen = Screen()
@@ -25,7 +28,6 @@ current_message = ""
 message_clear_time = 0
 messenger = None
 
-# We pass the active language to this function now
 def show_message(text, active_lang, duration=2.0):
     global current_message, message_clear_time, messenger
     if current_message != text:
